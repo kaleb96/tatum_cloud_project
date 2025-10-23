@@ -1,4 +1,4 @@
-type Provider = "AWS" | "AZURE" | "GCP"; // 프로바이더 예시, AWS만 활성화
+export type Provider = "AWS" | "AZURE" | "GCP"; // 프로바이더 예시, AWS만 활성화
 
 export const AWSRegionList = [
   "global",
