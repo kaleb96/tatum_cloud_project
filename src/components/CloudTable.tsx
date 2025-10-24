@@ -7,15 +7,24 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
-import type { Cloud, Provider } from "../types/type";
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, Edit2, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Edit2,
+  Trash2,
+  Router,
+  CloudCheck,
+  RotateCw,
+  Columns3,
+} from "lucide-react";
 import Chip from "./commons/Chip";
-import type { TableCloud } from "../assets/dummy/data";
+import type { Cloud, Provider } from "../types/type";
 
 interface CloudTableProps {
-  data: TableCloud[];
-  onEdit: (cloud: TableCloud) => void;
+  data: Cloud[];
+  onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
@@ -23,7 +32,14 @@ const CloudTable = ({ data, onEdit, onDelete }: CloudTableProps) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pageSize, setPageSize] = useState(30);
 
-  const columns = useMemo<ColumnDef<TableCloud>[]>(
+  const dummyButtons = [
+    "Global Proxy",
+    "Register New Cloud",
+    "Refresh",
+    "Customize Columns",
+  ];
+
+  const columns = useMemo<ColumnDef<Cloud>[]>(
     () => [
       {
         accessorKey: "provider",
@@ -35,11 +51,11 @@ const CloudTable = ({ data, onEdit, onDelete }: CloudTableProps) => {
           >
             Provider
             {column.getIsSorted() === "asc" ? (
-              <ArrowUp size={14} />
+              <ArrowUp size={14} className="ml-2" />
             ) : column.getIsSorted() === "desc" ? (
-              <ArrowDown size={14} />
+              <ArrowDown size={14} className="ml-2" />
             ) : (
-              <ArrowUpDown size={14} className="text-gray-400" />
+              <ArrowUpDown size={14} className="text-gray-400 ml-2" />
             )}
           </button>
         ),
@@ -58,45 +74,10 @@ const CloudTable = ({ data, onEdit, onDelete }: CloudTableProps) => {
       {
         accessorKey: "name",
         enableSorting: true,
-        header: ({ column }) => (
-          <button
-            className="flex items-center gap-1 font-semibold text-gray-800"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Account
-            {column.getIsSorted() === "asc" ? (
-              <ArrowUp size={14} />
-            ) : column.getIsSorted() === "desc" ? (
-              <ArrowDown size={14} />
-            ) : (
-              <ArrowUpDown size={14} className="text-gray-400" />
-            )}
-          </button>
-        ),
-        cell: ({ getValue }) => (
-          <span className="text-gray-900">{getValue<string>()}</span>
-        ),
+        header: "Account",
+        cell: ({ getValue }) => <span>{getValue<string>()}</span>,
       },
-      {
-        accessorKey: "cloudGroupName",
-        header: "Cloud Group",
-        cell: ({ getValue }) => {
-          const arr = (getValue<string[]>() ?? []).slice(0, 2);
-          return (
-            <div className="flex items-center gap-1">
-              {arr.map((g, i) => (
-                <span
-                  key={i}
-                  className="rounded-full bg-blue-50 text-blue-600 text-xs px-2 py-0.5"
-                >
-                  {g}
-                </span>
-              ))}
-            </div>
-          );
-        },
-      },
-      { accessorKey: "organization", header: "Organization" },
+      { accessorKey: "cloudGroupName", header: "Cloud Group" },
       {
         accessorKey: "accountId",
         header: "Account ID",
@@ -108,11 +89,7 @@ const CloudTable = ({ data, onEdit, onDelete }: CloudTableProps) => {
             AZURE: cred?.tenantId,
             GCP: cred?.projectId,
           } as const;
-          return (
-            <span className="text-gray-800">
-              {map[prov] || row.original.accountId}
-            </span>
-          );
+          return <span>{map[prov] || row.original.id}</span>;
         },
       },
       {
@@ -161,11 +138,13 @@ const CloudTable = ({ data, onEdit, onDelete }: CloudTableProps) => {
         cell: ({ row }) => {
           const { provider, eventSource } = row.original;
           if (!eventSource)
-            return <span className="text-gray-400 italic">Not Set</span>;
+            return <span className="text-gray-400 italic">N/A</span>;
           const value =
             provider === "AWS"
               ? (eventSource as any)?.cloudTrailName
-              : (eventSource as any)?.storageAccountName;
+              : provider === "AZURE"
+              ? (eventSource as any)?.storageAccountName
+              : (eventSource as any)?.pubSubTopic;
           return (
             <span className="text-gray-700">
               {value || <span className="text-gray-400 italic">N/A</span>}
@@ -173,39 +152,41 @@ const CloudTable = ({ data, onEdit, onDelete }: CloudTableProps) => {
           );
         },
       },
-      // 고정 버튼들
       {
-        id: "edit",
-        header: () => <div className="text-right pr-3">Edit</div>,
-        cell: ({ row }) => (
-          <div className="text-right pr-3 sticky right-12 bg-white">
-            <button
-              className="text-blue-600 hover:text-blue-800"
-              onClick={() => onEdit(row.original)}
-            >
-              <Edit2 size={18} />
-            </button>
-          </div>
-        ),
-        size: 64,
+        accessorKey: "regionList",
+        header: "Regions",
+        cell: ({ row }) => {
+          const { regionList } = row.original;
+          const more = regionList.length;
+          return more > 1 ? (
+            <span>{`${regionList[0]} +${more - 1}...`}</span>
+          ) : (
+            <span>{regionList}</span>
+          );
+        },
       },
       {
-        id: "delete",
-        header: () => <div className="text-right pr-4">Delete</div>,
-        cell: ({ row }) => (
-          <div className="text-right pr-4 sticky right-0 bg-white">
-            <button
-              className="text-red-600 hover:text-red-800"
-              onClick={() => onDelete(row.original.id)}
-            >
-              <Trash2 size={18} />
-            </button>
-          </div>
-        ),
-        size: 64,
+        accessorKey: "proxyUrl",
+        header: "Proxy",
+        cell: ({ row }) => {
+          const { proxyUrl } = row.original;
+          return proxyUrl ? <span>{proxyUrl}</span> : <span>N/A</span>;
+        },
+      },
+      {
+        accessorKey: "credentialType",
+        header: "Credential Type",
+        cell: ({ row }) => {
+          const { credentialType, provider } = row.original;
+          return (
+            <span className="text-gray-800 font-medium">
+              {provider}: {credentialType || "N/A"}
+            </span>
+          );
+        },
       },
     ],
-    [onEdit, onDelete]
+    []
   );
 
   const table = useReactTable({
@@ -218,31 +199,39 @@ const CloudTable = ({ data, onEdit, onDelete }: CloudTableProps) => {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  const handlePageSize = (n: number) => {
-    setPageSize(n);
-    table.setPageSize(n);
-  };
-
-  const pageFrom =
-    table.getState().pagination.pageIndex *
-      table.getState().pagination.pageSize +
-    1;
-  const pageTo = Math.min(
-    pageFrom + table.getState().pagination.pageSize - 1,
-    data.length
-  );
-
   return (
-    <div className="relative">
-      <div className="overflow-x-auto border rounded-lg">
-        <table className="min-w-[1200px] w-full border-collapse text-sm">
-          <thead className="bg-gray-50 sticky top-0 z-10">
-            {table.getHeaderGroups().map((hg) => (
-              <tr key={hg.id} className="border-b">
+    <div className="relative bg-white rounded-md overflow-hidden h-full">
+      {/* 상단 Total + 버튼 */}
+      <div className="flex justify-between my-4 items-center px-2">
+        <p className="text-gray-600 text-[14px] px-2">Total {data.length}</p>
+        <div className="flex text-blue-600 font-bold text-[12px] gap-2">
+          {dummyButtons.map((btn, i) => (
+            <button
+              key={i}
+              className="flex items-center gap-2 border border-blue-600 px-2 py-1 rounded hover:bg-blue-50 transition"
+              onClick={() => alert(`${btn} 기능 구현 준비중입니다.`)}
+            >
+              {btn === "Global Proxy" && <Router size={14} />}
+              {btn === "Register New Cloud" && <CloudCheck size={14} />}
+              {btn === "Refresh" && <RotateCw size={14} />}
+              {btn === "Customize Columns" && <Columns3 size={14} />}
+              <span>{btn}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ✅ 테이블 본체 - 스크롤 내부 */}
+      <div className="h-[calc(100vh-420px)] overflow-auto">
+        <table className="min-w-[1600px] w-full border-collapse text-sm">
+          <thead className="bg-gray-50 sticky top-0 z-10 border-b-[2px] border-gray-400">
+            {table.getHeaderGroups().map((hg, idx) => (
+              <tr key={hg.id}>
                 {hg.headers.map((header) => (
                   <th
                     key={header.id}
                     className="px-4 py-3 text-left font-semibold text-gray-700 whitespace-nowrap"
+                    style={{ minWidth: "160px" }}
                   >
                     {flexRender(
                       header.column.columnDef.header,
@@ -250,79 +239,50 @@ const CloudTable = ({ data, onEdit, onDelete }: CloudTableProps) => {
                     )}
                   </th>
                 ))}
+                <th className="sticky right-0 bg-gray-50 px-4 py-3 text-center font-semibold shadow-[rgba(0,0,0,0.1)_-4px_0px_6px_0px]">
+                  Actions
+                </th>
               </tr>
             ))}
           </thead>
+
           <tbody>
             {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="border-b hover:bg-gray-50">
+              <tr
+                key={row.id}
+                className={
+                  'hover:bg-gray-50 transition-colors duration-150 "border-b border-gray-200'
+                }
+              >
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-4 py-3 whitespace-nowrap">
+                  <td
+                    key={cell.id}
+                    className="px-4 py-3 whitespace-nowrap"
+                    style={{ minWidth: "160px" }}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
+                <td className="sticky right-0 bg-white px-4 py-3 text-center shadow-[rgba(0,0,0,0.12)_-4px_0px_6px_0px]">
+                  <div className="flex justify-center gap-3">
+                    <button
+                      className="text-blue-600 hover:text-blue-800"
+                      onClick={() => onEdit(row.original.id)}
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button
+                      className="text-red-600 hover:text-red-800"
+                      onClick={() => onDelete(row.original.id)}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
-
-      {/* Footer: Pagination + Items per page */}
-      <div className="mt-2 flex items-center justify-between rounded-md border bg-white px-3 py-2 text-sm">
-        <div className="flex items-center gap-1">
-          <button
-            className="px-2 py-1 rounded border disabled:opacity-40"
-            onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}
-          >
-            «
-          </button>
-          <button
-            className="px-2 py-1 rounded border disabled:opacity-40"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            ‹
-          </button>
-
-          <span className="mx-2 inline-flex items-center justify-center rounded bg-blue-600 px-3 py-1 text-white">
-            {table.getState().pagination.pageIndex + 1}
-          </span>
-
-          <button
-            className="px-2 py-1 rounded border disabled:opacity-40"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            ›
-          </button>
-          <button
-            className="px-2 py-1 rounded border disabled:opacity-40"
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-            disabled={!table.getCanNextPage()}
-          >
-            »
-          </button>
-
-          <span className="ml-3 text-gray-600">
-            {pageFrom} - {pageTo} of {data.length} items
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-gray-600">Items per page</span>
-          <select
-            className="rounded border px-2 py-1"
-            value={pageSize}
-            onChange={(e) => handlePageSize(Number(e.target.value))}
-          >
-            {[10, 30, 50].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
     </div>
   );

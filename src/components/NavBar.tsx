@@ -7,7 +7,7 @@ const NavBar = ({ activeMenu, onSelect }: NavBarProps) => {
   const menuList = ["Cloud", "Cloud Group", "Cloud Watcher", "Schedule"];
 
   return (
-    <nav className="w-full border-b bg-white mb-4">
+    <nav className="w-full border-b border-blue-600 bg-white ">
       <ul className="flex items-center space-x-2 p-2">
         {menuList.map((menu) => {
           const isActive = activeMenu === menu;

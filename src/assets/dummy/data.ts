@@ -2,13 +2,7 @@ import type { Cloud } from "../../types/type";
 
 // --- 더미 데이터 -------------------------------------------------
 
-export type TableCloud = Cloud & {
-  organization: string;
-  accountId: string;
-  status: boolean;
-};
-
-export const tableDummyData: TableCloud[] = Array.from({ length: 71 }).map(
+export const tableDummyData: Cloud[] = Array.from({ length: 71 }).map(
   (_, i) => {
     const prov = (["AWS", "AZURE", "GCP"] as const)[i % 3];
     const name = [
@@ -21,7 +15,6 @@ export const tableDummyData: TableCloud[] = Array.from({ length: 71 }).map(
       "GCP DEV",
       "prod",
     ][i % 8];
-    const status = i % 6 === 4 ? false : true; // 간단한 READY/ERROR 분기
 
     return {
       id: `cloud-${i + 1}`,
@@ -57,10 +50,6 @@ export const tableDummyData: TableCloud[] = Array.from({ length: 71 }).map(
         prov === "AWS"
           ? { cloudTrailName: i % 4 === 0 ? `trail-${i}` : undefined }
           : { storageAccountName: i % 4 === 0 ? `storage-${i}` : undefined },
-      // 화면에 보일 임시 필드들(스크린샷 유사)
-      organization: `Org ${i % 7}`,
-      accountId: `0000-${(100000 + i).toString().slice(-6)}`,
-      status, // boolean → READY/ERROR
     };
   }
 );
