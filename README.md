@@ -1,75 +1,24 @@
-# React + TypeScript + Vite
+# Tatum_Cloud_Project
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 1. API 및 i18n 관리 방안
 
-Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Swagger 기반 API 문서 자동화
 
-## React Compiler
+저는 가장 근본적인 방법이 가장 명확하다고 생각합니다. 
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+기존처럼 Swagger를 직접 작성하고 Swagger 내용에 따라 프론트가 작업하는 방법도 있겠지만, 
 
-Note: This will impact Vite dev & build performances.
+이를 보조하는 방법으로 
+- [Swagger / OpenAPI 공식문서](https://spec.openapis.org/oas/v3.1.0.html?utm_source=chatgpt.com) 와 같은 자동화 기능을 사용하는 방법이 있을 것 같습니다.
+- 이 방식을 통해 모든 백엔드 API 명세를 자동화합니다.
+- 프론트엔드에서 [openAPI-TypeScript](https://openapi-ts.dev/introduction) 등의 도구를 통해 Swagger 스키마를 변환하여 자동 생성하여 일관성을 확보하는 방안을 생각해보았습니다.
 
-## Expanding the ESLint configuration
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 2. i18n 적용 방안
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 지역감지 및 캐싱로직을 통한 방안
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- 사용자의 최초 접속 시에 브라우저의 언어 감지후 `localStorage`에 저장합니다.
+- 이후 요청시에는 캐시된 locale을 기반으로 `.ko`, `.en`, `.ja` 파일을 즉시 로드합니다.
+- i18n 파일버전을 쿠키 또는 로컬스토리지에 함께 저장하여 버전 불일치시 새로 로드하도록 구성하는 방안을 생각해봤습니다.
